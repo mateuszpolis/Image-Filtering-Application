@@ -134,3 +134,6 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~ 
+
+# Filters
+filters/
