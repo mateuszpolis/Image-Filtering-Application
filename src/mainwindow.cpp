@@ -65,6 +65,7 @@ void MainWindow::setupUI()
     filterTypeComboBox = new QComboBox(this);
     filterTypeComboBox->addItem("Function Filters");
     filterTypeComboBox->addItem("Convolution Filters");
+    filterTypeComboBox->addItem("Median Filter");
     filterTypeLayout->addWidget(filterTypeComboBox);
     
     // Filter selection
@@ -198,11 +199,31 @@ void MainWindow::setupUI()
     actionButtonLayout->addWidget(resetButton);
     actionButtonLayout->addWidget(saveButton);
     
+    // Median filter parameters
+    medianParamsGroup = new QGroupBox("Median Filter Parameters", this);
+    QVBoxLayout *medianParamsLayout = new QVBoxLayout(medianParamsGroup);
+    medianParamsLayout->setContentsMargins(5, 5, 5, 5);
+    
+    QHBoxLayout *medianSizeLayout = new QHBoxLayout();
+    QLabel *medianSizeLabel = new QLabel("Size:", this);
+    medianSizeSpinBox = new QSpinBox(this);
+    medianSizeSpinBox->setRange(3, 99);
+    medianSizeSpinBox->setValue(3);
+    medianSizeSpinBox->setSingleStep(2);
+    medianSizeSpinBox->setToolTip("Size of the median filter (must be odd)");
+    
+    medianSizeLayout->addWidget(medianSizeLabel);
+    medianSizeLayout->addWidget(medianSizeSpinBox);
+    medianParamsLayout->addLayout(medianSizeLayout);
+    // Add spacer to push controls to the top
+    medianParamsLayout->addStretch();
+    
     // Add all controls to the control panel
     controlLayout->addWidget(filterTypeGroup);
     controlLayout->addWidget(filterSelectionGroup);
     controlLayout->addWidget(functionParamsGroup);
     controlLayout->addWidget(convolutionParamsGroup);
+    controlLayout->addWidget(medianParamsGroup);
     controlLayout->addLayout(actionButtonLayout);
     controlLayout->addStretch();
     
@@ -259,6 +280,10 @@ void MainWindow::setupUI()
     // Initial state
     enableFilterControls(false);
     switchFilterType(0); // Start with function filters
+    
+    // Initially hide convolution parameters
+    convolutionParamsGroup->hide();
+    medianParamsGroup->hide();
 }
 
 void MainWindow::setupMenus()
@@ -481,18 +506,18 @@ void MainWindow::resetImage()
 void MainWindow::applyFilter()
 {
     if (currentImage.isNull()) {
-        QMessageBox::warning(this, tr("Error"), tr("No image loaded"));
+        QMessageBox::information(this, tr("No Image"),
+                                tr("Please open an image first."));
         return;
     }
     
-    // Save current image to history
+    // Save current image for undo
     imageHistory.push(currentImage);
     
     // Apply selected filter
+    QImage result;
     int filterType = filterTypeComboBox->currentIndex();
     int filterIndex = filterSelectionComboBox->currentIndex();
-    
-    QImage result;
     
     if (filterType == 0) { // Function filters
         switch (filterIndex) {
@@ -512,7 +537,7 @@ void MainWindow::applyFilter()
                 result = currentImage;
                 break;
         }
-    } else { // Convolution filters
+    } else if (filterType == 1) { // Convolution filters
         if (filterIndex < 5) { // Predefined filters
             switch (filterIndex) {
                 case 0: // Blur
@@ -552,6 +577,8 @@ void MainWindow::applyFilter()
             
             result = processor.applyConvolutionFilter(currentImage, kernel, divisor, offset, anchorX, anchorY);
         }
+    } else if (filterType == 2) { // Median filter
+        result = processor.applyMedianFilter(currentImage, medianSizeSpinBox->value());
     }
     
     // Update display
@@ -880,6 +907,21 @@ void MainWindow::setupConvolutionFilterControls()
     updateKernelTable();
 }
 
+void MainWindow::setupMedianFilterControls()
+{
+    // Hide other parameter groups
+    functionParamsGroup->hide();
+    convolutionParamsGroup->hide();
+    medianParamsGroup->show();
+    
+    // Clear and set up filter selection combo box
+    filterSelectionComboBox->clear();
+    filterSelectionComboBox->addItem("Median Filter");
+    
+    // Enable filter controls
+    enableFilterControls(true);
+}
+
 void MainWindow::switchFilterType(int index)
 {
     // Block signals to prevent recursive calls
@@ -888,8 +930,10 @@ void MainWindow::switchFilterType(int index)
     
     if (index == 0) {
         setupFunctionFilterControls();
-    } else {
+    } else if (index == 1) {
         setupConvolutionFilterControls();
+    } else if (index == 2) {
+        setupMedianFilterControls();
     }
     
     // Restore signals

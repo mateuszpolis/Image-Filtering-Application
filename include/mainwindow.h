@@ -83,6 +83,10 @@ private:
     QSpinBox *anchorXSpinBox;
     QSpinBox *anchorYSpinBox;
     
+    // Median filter parameters
+    QGroupBox *medianParamsGroup;
+    QSpinBox *medianSizeSpinBox;
+    
     // Buttons
     QPushButton *applyButton;
     QPushButton *undoButton;
@@ -103,6 +107,7 @@ private:
     void enableFilterControls(bool enable);
     void setupFunctionFilterControls();
     void setupConvolutionFilterControls();
+    void setupMedianFilterControls();
     void switchFilterType(int index);
 };
 

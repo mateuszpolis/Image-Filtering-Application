@@ -1,6 +1,8 @@
 #include "filters/convolutionfilters.h"
 #include <QColor>
 #include <cmath>
+#include <algorithm>
+#include <vector>
 
 // Base ConvolutionFilter implementation
 ConvolutionFilter::ConvolutionFilter(const QString &name, 
@@ -157,6 +159,92 @@ EmbossFilter::EmbossFilter()
         {-1, 1, 1},
         {0, 1, 2}
     }, 1.0, 128.0) {}
+
+// MedianFilter implementation
+MedianFilter::MedianFilter(int size)
+    : name("Median Filter"), size(size)
+{
+    // Ensure size is odd
+    if (size % 2 == 0) {
+        this->size = size + 1;
+    }
+}
+
+MedianFilter::~MedianFilter() {}
+
+QString MedianFilter::getName() const {
+    return name;
+}
+
+int MedianFilter::getSize() const {
+    return size;
+}
+
+void MedianFilter::setSize(int size) {
+    // Ensure size is odd
+    if (size % 2 == 0) {
+        this->size = size + 1;
+    } else {
+        this->size = size;
+    }
+}
+
+QImage MedianFilter::apply(const QImage &image) {
+    QImage result = image.copy();
+    
+    for (int y = 0; y < result.height(); ++y) {
+        for (int x = 0; x < result.width(); ++x) {
+            result.setPixel(x, y, applyToPixel(image, x, y));
+        }
+    }
+    
+    return result;
+}
+
+QRgb MedianFilter::applyToPixel(const QImage &image, int x, int y) {
+    std::vector<int> redValues;
+    std::vector<int> greenValues;
+    std::vector<int> blueValues;
+    
+    int halfSize = size / 2;
+    
+    // Collect all pixel values in the neighborhood
+    for (int ky = -halfSize; ky <= halfSize; ++ky) {
+        for (int kx = -halfSize; kx <= halfSize; ++kx) {
+            int imageX = x + kx;
+            int imageY = y + ky;
+            
+            QRgb pixel = getPixelWithBoundary(image, imageX, imageY);
+            
+            redValues.push_back(qRed(pixel));
+            greenValues.push_back(qGreen(pixel));
+            blueValues.push_back(qBlue(pixel));
+        }
+    }
+    
+    // Sort the values and find the median
+    std::sort(redValues.begin(), redValues.end());
+    std::sort(greenValues.begin(), greenValues.end());
+    std::sort(blueValues.begin(), blueValues.end());
+    
+    int medianIndex = redValues.size() / 2;
+    
+    int r = redValues[medianIndex];
+    int g = greenValues[medianIndex];
+    int b = blueValues[medianIndex];
+    
+    return qRgba(r, g, b, qAlpha(image.pixel(x, y)));
+}
+
+QRgb MedianFilter::getPixelWithBoundary(const QImage &image, int x, int y) {
+    // Handle boundary conditions (mirror at edges)
+    if (x < 0) x = -x;
+    if (y < 0) y = -y;
+    if (x >= image.width()) x = 2 * image.width() - x - 1;
+    if (y >= image.height()) y = 2 * image.height() - y - 1;
+    
+    return image.pixel(x, y);
+}
 
 // CustomFilter implementation
 CustomFilter::CustomFilter(const QString &name, 

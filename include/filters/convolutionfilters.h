@@ -84,6 +84,28 @@ public:
     EmbossFilter();
 };
 
+// Median filter
+class MedianFilter
+{
+public:
+    MedianFilter(int size = 3);
+    ~MedianFilter();
+    
+    QString getName() const;
+    int getSize() const;
+    void setSize(int size);
+    
+    QImage apply(const QImage &image);
+    
+private:
+    QString name;
+    int size;
+    
+    // Helper methods
+    QRgb applyToPixel(const QImage &image, int x, int y);
+    QRgb getPixelWithBoundary(const QImage &image, int x, int y);
+};
+
 // Custom filter
 class CustomFilter : public ConvolutionFilter
 {

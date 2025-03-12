@@ -83,6 +83,12 @@ QImage ImageProcessor::applyEmboss(const QImage &image) {
     return filter.apply(image);
 }
 
+// Median filter
+QImage ImageProcessor::applyMedianFilter(const QImage &image, int size) {
+    MedianFilter filter(size);
+    return filter.apply(image);
+}
+
 // Get predefined kernels
 QVector<QVector<double>> ImageProcessor::getBlurKernel() const {
     BlurFilter filter;

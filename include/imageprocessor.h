@@ -37,6 +37,9 @@ public:
     QImage applySharpen(const QImage &image);
     QImage applyEdgeDetection(const QImage &image);
     QImage applyEmboss(const QImage &image);
+    
+    // Median filter
+    QImage applyMedianFilter(const QImage &image, int size = 3);
 
     // Get predefined kernels
     QVector<QVector<double>> getBlurKernel() const;
