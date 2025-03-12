@@ -1,0 +1,136 @@
+# C++ objects and libs
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Qt-specific
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+*.qm
+*.prl
+
+# Qt Creator
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+CMakeLists.txt.user*
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.creator.user*
+
+# Build directories
+build/
+debug/
+release/
+bin/
+lib/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Visual Studio
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.tlog
+*.idb
+*.ipch
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+.vs/
+ipch/
+x64/
+x86/
+Win32/
+Debug/
+Release/
+*.vcxproj.user
+*.vcproj.*.user
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+*.xcuserstate
+*.xcworkspace/
+DerivedData/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Project-specific
+# Custom filter files directory (if you want to exclude saved filters)
+# filters/
+
+# Generated images
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+# Uncomment the above if you don't want to track test images
+# Or use a specific directory for test images that you do want to track
+
+# Editor-specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~ 
