@@ -144,4 +144,70 @@ QImage GrayscaleFilter::apply(const QImage &image) {
     }
     
     return result;
+}
+
+// UniformQuantizationFilter implementation
+UniformQuantizationFilter::UniformQuantizationFilter(int rLevels, int gLevels, int bLevels)
+    : FunctionFilter("Uniform Quantization"), rLevels(rLevels), gLevels(gLevels), bLevels(bLevels) {}
+
+QImage UniformQuantizationFilter::apply(const QImage &image) {
+    QImage result = image.copy();
+    
+    // Calculate the size of each level/step for each color channel
+    double rStep = 256.0 / rLevels;
+    double gStep = 256.0 / gLevels;
+    double bStep = 256.0 / bLevels;
+    
+    for (int y = 0; y < result.height(); ++y) {
+        for (int x = 0; x < result.width(); ++x) {
+            QRgb pixel = image.pixel(x, y);
+            
+            int r = qRed(pixel);
+            int g = qGreen(pixel);
+            int b = qBlue(pixel);
+            
+            // Quantize each color channel
+            // First determine which level the color falls into
+            int rLevel = static_cast<int>(r / rStep);
+            int gLevel = static_cast<int>(g / gStep);
+            int bLevel = static_cast<int>(b / bStep);
+            
+            // Ensure we don't exceed the maximum level
+            rLevel = qMin(rLevel, rLevels - 1);
+            gLevel = qMin(gLevel, gLevels - 1);
+            bLevel = qMin(bLevel, bLevels - 1);
+            
+            // Map the level back to a color value (center of the level's range)
+            r = static_cast<int>((rLevel + 0.5) * rStep);
+            g = static_cast<int>((gLevel + 0.5) * gStep);
+            b = static_cast<int>((bLevel + 0.5) * bStep);
+            
+            // Ensure the values are within valid range
+            r = qBound(0, r, 255);
+            g = qBound(0, g, 255);
+            b = qBound(0, b, 255);
+            
+            result.setPixel(x, y, qRgba(r, g, b, qAlpha(pixel)));
+        }
+    }
+    
+    return result;
+}
+
+void UniformQuantizationFilter::setLevels(int rLevels, int gLevels, int bLevels) {
+    this->rLevels = qMax(2, rLevels); // Minimum 2 levels
+    this->gLevels = qMax(2, gLevels);
+    this->bLevels = qMax(2, bLevels);
+}
+
+int UniformQuantizationFilter::getRedLevels() const {
+    return rLevels;
+}
+
+int UniformQuantizationFilter::getGreenLevels() const {
+    return gLevels;
+}
+
+int UniformQuantizationFilter::getBlueLevels() const {
+    return bLevels;
 } 

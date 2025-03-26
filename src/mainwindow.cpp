@@ -97,6 +97,28 @@ void MainWindow::setupUI()
     gammaSpinBox->setSingleStep(0.1);
     functionParamsLayout->addRow("Gamma:", gammaSpinBox);
     
+    // Uniform quantization parameters
+    quantizationParamsGroup = new QGroupBox("Uniform Quantization Parameters", this);
+    QFormLayout *quantizationParamsLayout = new QFormLayout(quantizationParamsGroup);
+    
+    redLevelsSpinBox = new QSpinBox(this);
+    redLevelsSpinBox->setRange(2, 256);
+    redLevelsSpinBox->setValue(8);
+    redLevelsSpinBox->setSingleStep(2);
+    quantizationParamsLayout->addRow("Red Levels:", redLevelsSpinBox);
+    
+    greenLevelsSpinBox = new QSpinBox(this);
+    greenLevelsSpinBox->setRange(2, 256);
+    greenLevelsSpinBox->setValue(8);
+    greenLevelsSpinBox->setSingleStep(2);
+    quantizationParamsLayout->addRow("Green Levels:", greenLevelsSpinBox);
+    
+    blueLevelsSpinBox = new QSpinBox(this);
+    blueLevelsSpinBox->setRange(2, 256);
+    blueLevelsSpinBox->setValue(8);
+    blueLevelsSpinBox->setSingleStep(2);
+    quantizationParamsLayout->addRow("Blue Levels:", blueLevelsSpinBox);
+    
     // Convolution filter parameters
     convolutionParamsGroup = new QGroupBox("Convolution Filter Parameters", this);
     QVBoxLayout *convolutionParamsLayout = new QVBoxLayout(convolutionParamsGroup);
@@ -222,6 +244,7 @@ void MainWindow::setupUI()
     controlLayout->addWidget(filterTypeGroup);
     controlLayout->addWidget(filterSelectionGroup);
     controlLayout->addWidget(functionParamsGroup);
+    controlLayout->addWidget(quantizationParamsGroup);
     controlLayout->addWidget(convolutionParamsGroup);
     controlLayout->addWidget(medianParamsGroup);
     controlLayout->addLayout(actionButtonLayout);
@@ -281,9 +304,10 @@ void MainWindow::setupUI()
     enableFilterControls(false);
     switchFilterType(0); // Start with function filters
     
-    // Initially hide convolution parameters
+    // Initially hide parameters
     convolutionParamsGroup->hide();
     medianParamsGroup->hide();
+    quantizationParamsGroup->hide();
 }
 
 void MainWindow::setupMenus()
@@ -535,6 +559,12 @@ void MainWindow::applyFilter()
                 break;
             case 4: // Grayscale
                 result = processor.applyGrayscale(currentImage);
+                break;
+            case 5: // Uniform Quantization
+                result = processor.applyUniformQuantization(currentImage, 
+                                                           redLevelsSpinBox->value(),
+                                                           greenLevelsSpinBox->value(),
+                                                           blueLevelsSpinBox->value());
                 break;
             default:
                 result = currentImage;
@@ -815,6 +845,19 @@ void MainWindow::updateFilterPreview()
 
 void MainWindow::loadPredefinedFilter(int index)
 {
+    // Check if we need to show quantization controls
+    if (filterTypeComboBox->currentIndex() == 0) { // Function filters
+        bool showQuantization = (index == 5); // Uniform Quantization is at index 5
+        
+        if (showQuantization) {
+            functionParamsGroup->hide();
+            quantizationParamsGroup->show();
+        } else {
+            functionParamsGroup->show();
+            quantizationParamsGroup->hide();
+        }
+    }
+    
     // Only update if we're in convolution filter mode
     if (filterTypeComboBox->currentIndex() == 1) {
         // Make sure the index is valid
@@ -865,10 +908,13 @@ void MainWindow::setupFunctionFilterControls()
     filterSelectionComboBox->addItem("Contrast Enhancement");
     filterSelectionComboBox->addItem("Gamma Correction");
     filterSelectionComboBox->addItem("Grayscale");
+    filterSelectionComboBox->addItem("Uniform Quantization");
     
-    // Show function parameters, hide convolution parameters
+    // Show function parameters, hide other parameters
     functionParamsGroup->setVisible(true);
+    quantizationParamsGroup->setVisible(false);
     convolutionParamsGroup->setVisible(false);
+    medianParamsGroup->setVisible(false);
 }
 
 void MainWindow::setupConvolutionFilterControls()
@@ -926,6 +972,18 @@ void MainWindow::setupMedianFilterControls()
     enableFilterControls(true);
 }
 
+void MainWindow::setupQuantizationFilterControls()
+{
+    // Hide other parameter groups
+    functionParamsGroup->hide();
+    convolutionParamsGroup->hide();
+    medianParamsGroup->hide();
+    quantizationParamsGroup->show();
+    
+    // Enable filter controls
+    enableFilterControls(true);
+}
+
 void MainWindow::switchFilterType(int index)
 {
     // Block signals to prevent recursive calls
@@ -934,6 +992,11 @@ void MainWindow::switchFilterType(int index)
     
     if (index == 0) {
         setupFunctionFilterControls();
+        // Also check if we need to show quantization controls based on current selection
+        if (filterSelectionComboBox->count() > 5 && filterSelectionComboBox->currentIndex() == 5) {
+            functionParamsGroup->hide();
+            quantizationParamsGroup->show();
+        }
     } else if (index == 1) {
         setupConvolutionFilterControls();
     } else if (index == 2) {

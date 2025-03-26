@@ -72,6 +72,12 @@ private:
     QDoubleSpinBox *contrastSpinBox;
     QDoubleSpinBox *gammaSpinBox;
     
+    // Uniform quantization parameters
+    QGroupBox *quantizationParamsGroup;
+    QSpinBox *redLevelsSpinBox;
+    QSpinBox *greenLevelsSpinBox;
+    QSpinBox *blueLevelsSpinBox;
+    
     // Convolution filter parameters
     QGroupBox *convolutionParamsGroup;
     QSpinBox *kernelRowsSpinBox;
@@ -108,6 +114,7 @@ private:
     void setupFunctionFilterControls();
     void setupConvolutionFilterControls();
     void setupMedianFilterControls();
+    void setupQuantizationFilterControls();
     void switchFilterType(int index);
 };
 

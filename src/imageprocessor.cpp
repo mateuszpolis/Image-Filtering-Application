@@ -43,6 +43,11 @@ QImage ImageProcessor::applyGrayscale(const QImage &image) {
     return filter.apply(image);
 }
 
+QImage ImageProcessor::applyUniformQuantization(const QImage &image, int rLevels, int gLevels, int bLevels) {
+    UniformQuantizationFilter filter(rLevels, gLevels, bLevels);
+    return filter.apply(image);
+}
+
 // Convolution filters
 QImage ImageProcessor::applyConvolutionFilter(const QImage &image, 
                                             const QVector<QVector<double>> &kernel,

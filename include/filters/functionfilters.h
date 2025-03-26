@@ -75,4 +75,21 @@ public:
     QImage apply(const QImage &image) override;
 };
 
+// Uniform Quantization filter
+class UniformQuantizationFilter : public FunctionFilter
+{
+public:
+    UniformQuantizationFilter(int rLevels = 8, int gLevels = 8, int bLevels = 8);
+    QImage apply(const QImage &image) override;
+    void setLevels(int rLevels, int gLevels, int bLevels);
+    int getRedLevels() const;
+    int getGreenLevels() const;
+    int getBlueLevels() const;
+    
+private:
+    int rLevels; // Number of levels for red channel
+    int gLevels; // Number of levels for green channel
+    int bLevels; // Number of levels for blue channel
+};
+
 #endif // FUNCTIONFILTERS_H 

@@ -23,6 +23,7 @@ public:
     QImage applyContrastEnhancement(const QImage &image, double factor);
     QImage applyGammaCorrection(const QImage &image, double gamma);
     QImage applyGrayscale(const QImage &image);
+    QImage applyUniformQuantization(const QImage &image, int rLevels, int gLevels, int bLevels);
 
     // Convolution filters
     QImage applyConvolutionFilter(const QImage &image, 
