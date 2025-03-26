@@ -48,6 +48,15 @@ QImage ImageProcessor::applyUniformQuantization(const QImage &image, int rLevels
     return filter.apply(image);
 }
 
+QImage ImageProcessor::applyDithering(const QImage &image, int rLevels, int gLevels, int bLevels, DitheringFilter::KernelType kernelType) {
+    DitheringFilter filter(rLevels, gLevels, bLevels, kernelType);
+    return filter.apply(image);
+}
+
+QStringList ImageProcessor::getDitheringKernelNames() const {
+    return DitheringFilter::getKernelNames();
+}
+
 // Convolution filters
 QImage ImageProcessor::applyConvolutionFilter(const QImage &image, 
                                             const QVector<QVector<double>> &kernel,

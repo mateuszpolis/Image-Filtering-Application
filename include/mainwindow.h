@@ -78,6 +78,13 @@ private:
     QSpinBox *greenLevelsSpinBox;
     QSpinBox *blueLevelsSpinBox;
     
+    // Dithering parameters
+    QGroupBox *ditheringParamsGroup;
+    QSpinBox *ditherRedLevelsSpinBox;
+    QSpinBox *ditherGreenLevelsSpinBox;
+    QSpinBox *ditherBlueLevelsSpinBox;
+    QComboBox *kernelTypeComboBox;
+    
     // Convolution filter parameters
     QGroupBox *convolutionParamsGroup;
     QSpinBox *kernelRowsSpinBox;
@@ -115,6 +122,7 @@ private:
     void setupConvolutionFilterControls();
     void setupMedianFilterControls();
     void setupQuantizationFilterControls();
+    void setupDitheringFilterControls();
     void switchFilterType(int index);
 };
 

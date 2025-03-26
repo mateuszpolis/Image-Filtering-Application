@@ -210,4 +210,274 @@ int UniformQuantizationFilter::getGreenLevels() const {
 
 int UniformQuantizationFilter::getBlueLevels() const {
     return bLevels;
+}
+
+// DitheringFilter implementation
+DitheringFilter::DitheringFilter(int rLevels, int gLevels, int bLevels, KernelType kernelType)
+    : FunctionFilter("Dithering"), rLevels(rLevels), gLevels(gLevels), bLevels(bLevels), kernelType(kernelType) {}
+
+QImage DitheringFilter::apply(const QImage &image) {
+    // Detect if the image is grayscale
+    bool isGrayscale = true;
+    for (int y = 0; y < image.height() && isGrayscale; ++y) {
+        for (int x = 0; x < image.width() && isGrayscale; ++x) {
+            QRgb pixel = image.pixel(x, y);
+            if (qRed(pixel) != qGreen(pixel) || qRed(pixel) != qBlue(pixel)) {
+                isGrayscale = false;
+                break;
+            }
+        }
+    }
+    
+    // Apply appropriate dithering based on image type
+    if (isGrayscale) {
+        return applyToGrayscale(image);
+    } else {
+        return applyToColor(image);
+    }
+}
+
+void DitheringFilter::setLevels(int rLevels, int gLevels, int bLevels) {
+    this->rLevels = qMax(2, rLevels); // Minimum 2 levels
+    this->gLevels = qMax(2, gLevels);
+    this->bLevels = qMax(2, bLevels);
+}
+
+void DitheringFilter::setKernelType(KernelType kernelType) {
+    this->kernelType = kernelType;
+}
+
+int DitheringFilter::getRedLevels() const {
+    return rLevels;
+}
+
+int DitheringFilter::getGreenLevels() const {
+    return gLevels;
+}
+
+int DitheringFilter::getBlueLevels() const {
+    return bLevels;
+}
+
+DitheringFilter::KernelType DitheringFilter::getKernelType() const {
+    return kernelType;
+}
+
+QStringList DitheringFilter::getKernelNames() {
+    return {
+        "Floyd-Steinberg",
+        "Burkes",
+        "Stucki",
+        "Sierra",
+        "Atkinson"
+    };
+}
+
+int DitheringFilter::quantizeValue(int value, int levels) {
+    if (levels <= 1) return 0;
+    
+    // Calculate step size for the given number of levels
+    double step = 255.0 / (levels - 1);
+    
+    // Find the closest level
+    int level = qRound(value / step);
+    
+    // Map the level back to a color value
+    return qBound(0, static_cast<int>(level * step), 255);
+}
+
+QImage DitheringFilter::applyToGrayscale(const QImage &image) {
+    // Create a copy of the image
+    QImage result = image.convertToFormat(QImage::Format_RGB32);
+    
+    // Create error buffer with some extra space on borders to simplify algorithm
+    int width = result.width();
+    int height = result.height();
+    QVector<QVector<double>> errors(height + 2, QVector<double>(width + 2, 0.0));
+    
+    // Get diffusion kernel
+    QVector<DiffusionCoefficient> kernel = getDiffusionKernel();
+    
+    // Process the image
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            QRgb pixel = result.pixel(x, y);
+            int oldValue = qRed(pixel);  // For grayscale, all R,G,B are the same
+            
+            // Apply accumulated error
+            int newValue = qBound(0, oldValue + qRound(errors[y][x]), 255);
+            
+            // Quantize the value
+            int quantizedValue = quantizeValue(newValue, rLevels);  // Using rLevels for grayscale
+            
+            // Set the new pixel value
+            result.setPixel(x, y, qRgb(quantizedValue, quantizedValue, quantizedValue));
+            
+            // Calculate the error
+            int error = newValue - quantizedValue;
+            
+            // Distribute the error according to the kernel
+            for (const auto &coeff : kernel) {
+                int newX = x + coeff.x;
+                int newY = y + coeff.y;
+                
+                // Make sure we're within bounds
+                if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                    errors[newY][newX] += error * coeff.weight;
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+QImage DitheringFilter::applyToColor(const QImage &image) {
+    // Create a copy of the image
+    QImage result = image.convertToFormat(QImage::Format_RGB32);
+    
+    // Create error buffers for each channel
+    int width = result.width();
+    int height = result.height();
+    QVector<QVector<double>> errorsR(height + 2, QVector<double>(width + 2, 0.0));
+    QVector<QVector<double>> errorsG(height + 2, QVector<double>(width + 2, 0.0));
+    QVector<QVector<double>> errorsB(height + 2, QVector<double>(width + 2, 0.0));
+    
+    // Get diffusion kernel
+    QVector<DiffusionCoefficient> kernel = getDiffusionKernel();
+    
+    // Process the image
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            QRgb pixel = result.pixel(x, y);
+            
+            // Get original color values
+            int oldR = qRed(pixel);
+            int oldG = qGreen(pixel);
+            int oldB = qBlue(pixel);
+            
+            // Apply accumulated errors
+            int newR = qBound(0, oldR + qRound(errorsR[y][x]), 255);
+            int newG = qBound(0, oldG + qRound(errorsG[y][x]), 255);
+            int newB = qBound(0, oldB + qRound(errorsB[y][x]), 255);
+            
+            // Quantize each channel
+            int quantizedR = quantizeValue(newR, rLevels);
+            int quantizedG = quantizeValue(newG, gLevels);
+            int quantizedB = quantizeValue(newB, bLevels);
+            
+            // Set the new pixel value
+            result.setPixel(x, y, qRgb(quantizedR, quantizedG, quantizedB));
+            
+            // Calculate the errors
+            int errorR = newR - quantizedR;
+            int errorG = newG - quantizedG;
+            int errorB = newB - quantizedB;
+            
+            // Distribute the errors according to the kernel
+            for (const auto &coeff : kernel) {
+                int newX = x + coeff.x;
+                int newY = y + coeff.y;
+                
+                // Make sure we're within bounds
+                if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                    errorsR[newY][newX] += errorR * coeff.weight;
+                    errorsG[newY][newX] += errorG * coeff.weight;
+                    errorsB[newY][newX] += errorB * coeff.weight;
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+QVector<DitheringFilter::DiffusionCoefficient> DitheringFilter::getDiffusionKernel() {
+    QVector<DiffusionCoefficient> kernel;
+    
+    switch (kernelType) {
+        case FLOYD_STEINBERG:
+            // Floyd-Steinberg kernel:
+            //     *  7/16
+            // 3/16 5/16 1/16
+            kernel = {
+                {1, 0, 7.0/16.0},
+                {-1, 1, 3.0/16.0},
+                {0, 1, 5.0/16.0},
+                {1, 1, 1.0/16.0}
+            };
+            break;
+            
+        case BURKES:
+            // Burkes kernel:
+            //       *  8/32  4/32
+            // 2/32 4/32 8/32 4/32 2/32
+            kernel = {
+                {1, 0, 8.0/32.0},
+                {2, 0, 4.0/32.0},
+                {-2, 1, 2.0/32.0},
+                {-1, 1, 4.0/32.0},
+                {0, 1, 8.0/32.0},
+                {1, 1, 4.0/32.0},
+                {2, 1, 2.0/32.0}
+            };
+            break;
+            
+        case STUCKI:
+            // Stucki kernel:
+            //        *  8/42  4/42
+            // 2/42 4/42 8/42  4/42  2/42
+            // 1/42 2/42 4/42  2/42  1/42
+            kernel = {
+                {1, 0, 8.0/42.0},
+                {2, 0, 4.0/42.0},
+                {-2, 1, 2.0/42.0},
+                {-1, 1, 4.0/42.0},
+                {0, 1, 8.0/42.0},
+                {1, 1, 4.0/42.0},
+                {2, 1, 2.0/42.0},
+                {-2, 2, 1.0/42.0},
+                {-1, 2, 2.0/42.0},
+                {0, 2, 4.0/42.0},
+                {1, 2, 2.0/42.0},
+                {2, 2, 1.0/42.0}
+            };
+            break;
+            
+        case SIERRA:
+            // Sierra kernel:
+            //        *  5/32  3/32
+            // 2/32 4/32 5/32  4/32  2/32
+            //       2/32 3/32  2/32
+            kernel = {
+                {1, 0, 5.0/32.0},
+                {2, 0, 3.0/32.0},
+                {-2, 1, 2.0/32.0},
+                {-1, 1, 4.0/32.0},
+                {0, 1, 5.0/32.0},
+                {1, 1, 4.0/32.0},
+                {2, 1, 2.0/32.0},
+                {-1, 2, 2.0/32.0},
+                {0, 2, 3.0/32.0},
+                {1, 2, 2.0/32.0}
+            };
+            break;
+            
+        case ATKINSON:
+            // Atkinson kernel:
+            //      *  1/8  1/8
+            // 1/8 1/8 1/8
+            //      1/8
+            kernel = {
+                {1, 0, 1.0/8.0},
+                {2, 0, 1.0/8.0},
+                {-1, 1, 1.0/8.0},
+                {0, 1, 1.0/8.0},
+                {1, 1, 1.0/8.0},
+                {0, 2, 1.0/8.0}
+            };
+            break;
+    }
+    
+    return kernel;
 } 

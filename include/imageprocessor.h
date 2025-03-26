@@ -6,6 +6,7 @@
 #include <QString>
 #include <QMap>
 #include <functional>
+#include "filters/functionfilters.h" // Include to access DitheringFilter::KernelType
 
 // Forward declarations
 class FunctionFilter;
@@ -24,6 +25,10 @@ public:
     QImage applyGammaCorrection(const QImage &image, double gamma);
     QImage applyGrayscale(const QImage &image);
     QImage applyUniformQuantization(const QImage &image, int rLevels, int gLevels, int bLevels);
+    QImage applyDithering(const QImage &image, int rLevels, int gLevels, int bLevels, DitheringFilter::KernelType kernelType);
+    
+    // Get dithering kernel names
+    QStringList getDitheringKernelNames() const;
 
     // Convolution filters
     QImage applyConvolutionFilter(const QImage &image, 

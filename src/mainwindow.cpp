@@ -119,6 +119,32 @@ void MainWindow::setupUI()
     blueLevelsSpinBox->setSingleStep(2);
     quantizationParamsLayout->addRow("Blue Levels:", blueLevelsSpinBox);
     
+    // Dithering parameters
+    ditheringParamsGroup = new QGroupBox("Dithering Parameters", this);
+    QFormLayout *ditheringParamsLayout = new QFormLayout(ditheringParamsGroup);
+    
+    ditherRedLevelsSpinBox = new QSpinBox(this);
+    ditherRedLevelsSpinBox->setRange(2, 256);
+    ditherRedLevelsSpinBox->setValue(2);
+    ditherRedLevelsSpinBox->setSingleStep(1);
+    ditheringParamsLayout->addRow("Red Levels:", ditherRedLevelsSpinBox);
+    
+    ditherGreenLevelsSpinBox = new QSpinBox(this);
+    ditherGreenLevelsSpinBox->setRange(2, 256);
+    ditherGreenLevelsSpinBox->setValue(2);
+    ditherGreenLevelsSpinBox->setSingleStep(1);
+    ditheringParamsLayout->addRow("Green Levels:", ditherGreenLevelsSpinBox);
+    
+    ditherBlueLevelsSpinBox = new QSpinBox(this);
+    ditherBlueLevelsSpinBox->setRange(2, 256);
+    ditherBlueLevelsSpinBox->setValue(2);
+    ditherBlueLevelsSpinBox->setSingleStep(1);
+    ditheringParamsLayout->addRow("Blue Levels:", ditherBlueLevelsSpinBox);
+    
+    kernelTypeComboBox = new QComboBox(this);
+    kernelTypeComboBox->addItems(processor.getDitheringKernelNames());
+    ditheringParamsLayout->addRow("Kernel Type:", kernelTypeComboBox);
+    
     // Convolution filter parameters
     convolutionParamsGroup = new QGroupBox("Convolution Filter Parameters", this);
     QVBoxLayout *convolutionParamsLayout = new QVBoxLayout(convolutionParamsGroup);
@@ -245,6 +271,7 @@ void MainWindow::setupUI()
     controlLayout->addWidget(filterSelectionGroup);
     controlLayout->addWidget(functionParamsGroup);
     controlLayout->addWidget(quantizationParamsGroup);
+    controlLayout->addWidget(ditheringParamsGroup);
     controlLayout->addWidget(convolutionParamsGroup);
     controlLayout->addWidget(medianParamsGroup);
     controlLayout->addLayout(actionButtonLayout);
@@ -308,6 +335,7 @@ void MainWindow::setupUI()
     convolutionParamsGroup->hide();
     medianParamsGroup->hide();
     quantizationParamsGroup->hide();
+    ditheringParamsGroup->hide();
 }
 
 void MainWindow::setupMenus()
@@ -543,6 +571,9 @@ void MainWindow::applyFilter()
     int filterType = filterTypeComboBox->currentIndex();
     int filterIndex = filterSelectionComboBox->currentIndex();
     
+    // Define kernel type outside of the switch to avoid variable initialization bypass error
+    DitheringFilter::KernelType kernelType = DitheringFilter::FLOYD_STEINBERG;
+    
     if (filterType == 0) { // Function filters
         switch (filterIndex) {
             case 0: // Inversion
@@ -565,6 +596,16 @@ void MainWindow::applyFilter()
                                                            redLevelsSpinBox->value(),
                                                            greenLevelsSpinBox->value(),
                                                            blueLevelsSpinBox->value());
+                break;
+            case 6: // Dithering
+                // Convert combobox index to kernel type
+                kernelType = static_cast<DitheringFilter::KernelType>(kernelTypeComboBox->currentIndex());
+                
+                result = processor.applyDithering(currentImage,
+                                                 ditherRedLevelsSpinBox->value(),
+                                                 ditherGreenLevelsSpinBox->value(),
+                                                 ditherBlueLevelsSpinBox->value(),
+                                                 kernelType);
                 break;
             default:
                 result = currentImage;
@@ -845,16 +886,23 @@ void MainWindow::updateFilterPreview()
 
 void MainWindow::loadPredefinedFilter(int index)
 {
-    // Check if we need to show quantization controls
+    // Check if we need to show quantization or dithering controls
     if (filterTypeComboBox->currentIndex() == 0) { // Function filters
         bool showQuantization = (index == 5); // Uniform Quantization is at index 5
+        bool showDithering = (index == 6); // Dithering is at index 6
         
+        // Hide all parameter groups first
+        functionParamsGroup->hide();
+        quantizationParamsGroup->hide();
+        ditheringParamsGroup->hide();
+        
+        // Show the appropriate parameter group
         if (showQuantization) {
-            functionParamsGroup->hide();
             quantizationParamsGroup->show();
+        } else if (showDithering) {
+            ditheringParamsGroup->show();
         } else {
             functionParamsGroup->show();
-            quantizationParamsGroup->hide();
         }
     }
     
@@ -892,7 +940,10 @@ void MainWindow::enableFilterControls(bool enable)
     filterTypeComboBox->setEnabled(enable);
     filterSelectionComboBox->setEnabled(enable);
     functionParamsGroup->setEnabled(enable);
+    quantizationParamsGroup->setEnabled(enable);
+    ditheringParamsGroup->setEnabled(enable);
     convolutionParamsGroup->setEnabled(enable);
+    medianParamsGroup->setEnabled(enable);
     applyButton->setEnabled(enable);
     undoButton->setEnabled(enable);
     resetButton->setEnabled(enable);
@@ -909,10 +960,12 @@ void MainWindow::setupFunctionFilterControls()
     filterSelectionComboBox->addItem("Gamma Correction");
     filterSelectionComboBox->addItem("Grayscale");
     filterSelectionComboBox->addItem("Uniform Quantization");
+    filterSelectionComboBox->addItem("Dithering");
     
     // Show function parameters, hide other parameters
     functionParamsGroup->setVisible(true);
     quantizationParamsGroup->setVisible(false);
+    ditheringParamsGroup->setVisible(false);
     convolutionParamsGroup->setVisible(false);
     medianParamsGroup->setVisible(false);
 }
@@ -984,6 +1037,19 @@ void MainWindow::setupQuantizationFilterControls()
     enableFilterControls(true);
 }
 
+void MainWindow::setupDitheringFilterControls()
+{
+    // Hide other parameter groups
+    functionParamsGroup->hide();
+    convolutionParamsGroup->hide();
+    medianParamsGroup->hide();
+    quantizationParamsGroup->hide();
+    ditheringParamsGroup->show();
+    
+    // Enable filter controls
+    enableFilterControls(true);
+}
+
 void MainWindow::switchFilterType(int index)
 {
     // Block signals to prevent recursive calls
@@ -992,10 +1058,15 @@ void MainWindow::switchFilterType(int index)
     
     if (index == 0) {
         setupFunctionFilterControls();
-        // Also check if we need to show quantization controls based on current selection
-        if (filterSelectionComboBox->count() > 5 && filterSelectionComboBox->currentIndex() == 5) {
-            functionParamsGroup->hide();
-            quantizationParamsGroup->show();
+        // Also check if we need to show quantization or dithering controls based on current selection
+        if (filterSelectionComboBox->count() > 6) {
+            if (filterSelectionComboBox->currentIndex() == 5) {
+                functionParamsGroup->hide();
+                quantizationParamsGroup->show();
+            } else if (filterSelectionComboBox->currentIndex() == 6) {
+                functionParamsGroup->hide();
+                ditheringParamsGroup->show();
+            }
         }
     } else if (index == 1) {
         setupConvolutionFilterControls();
