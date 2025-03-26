@@ -67,4 +67,12 @@ private:
     double gamma; // Range: 0.1 to 10.0
 };
 
+// Grayscale filter
+class GrayscaleFilter : public FunctionFilter
+{
+public:
+    GrayscaleFilter();
+    QImage apply(const QImage &image) override;
+};
+
 #endif // FUNCTIONFILTERS_H 

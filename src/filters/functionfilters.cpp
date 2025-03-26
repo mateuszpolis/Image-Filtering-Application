@@ -120,4 +120,28 @@ void GammaFilter::setGamma(double gamma) {
 
 double GammaFilter::getGamma() const {
     return gamma;
+}
+
+// GrayscaleFilter implementation
+GrayscaleFilter::GrayscaleFilter() : FunctionFilter("Grayscale") {}
+
+QImage GrayscaleFilter::apply(const QImage &image) {
+    QImage result = image.copy();
+    
+    for (int y = 0; y < result.height(); ++y) {
+        for (int x = 0; x < result.width(); ++x) {
+            QRgb pixel = image.pixel(x, y);
+            int r = qRed(pixel);
+            int g = qGreen(pixel);
+            int b = qBlue(pixel);
+            
+            // Standard grayscale conversion formula (ITU-R BT.601)
+            int gray = qRound(0.299 * r + 0.587 * g + 0.114 * b);
+            gray = qBound(0, gray, 255);
+            
+            result.setPixel(x, y, qRgba(gray, gray, gray, qAlpha(pixel)));
+        }
+    }
+    
+    return result;
 } 

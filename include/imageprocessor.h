@@ -22,6 +22,7 @@ public:
     QImage applyBrightnessCorrection(const QImage &image, double factor);
     QImage applyContrastEnhancement(const QImage &image, double factor);
     QImage applyGammaCorrection(const QImage &image, double gamma);
+    QImage applyGrayscale(const QImage &image);
 
     // Convolution filters
     QImage applyConvolutionFilter(const QImage &image, 

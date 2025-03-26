@@ -38,6 +38,11 @@ QImage ImageProcessor::applyGammaCorrection(const QImage &image, double gamma) {
     return filter.apply(image);
 }
 
+QImage ImageProcessor::applyGrayscale(const QImage &image) {
+    GrayscaleFilter filter;
+    return filter.apply(image);
+}
+
 // Convolution filters
 QImage ImageProcessor::applyConvolutionFilter(const QImage &image, 
                                             const QVector<QVector<double>> &kernel,

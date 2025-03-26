@@ -533,6 +533,9 @@ void MainWindow::applyFilter()
             case 3: // Gamma
                 result = processor.applyGammaCorrection(currentImage, gammaSpinBox->value());
                 break;
+            case 4: // Grayscale
+                result = processor.applyGrayscale(currentImage);
+                break;
             default:
                 result = currentImage;
                 break;
@@ -861,6 +864,7 @@ void MainWindow::setupFunctionFilterControls()
     filterSelectionComboBox->addItem("Brightness Correction");
     filterSelectionComboBox->addItem("Contrast Enhancement");
     filterSelectionComboBox->addItem("Gamma Correction");
+    filterSelectionComboBox->addItem("Grayscale");
     
     // Show function parameters, hide convolution parameters
     functionParamsGroup->setVisible(true);
