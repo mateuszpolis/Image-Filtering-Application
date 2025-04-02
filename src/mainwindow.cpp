@@ -50,7 +50,7 @@ void MainWindow::setupUI()
     setCentralWidget(centralWidget);
     
     // Main layout
-    QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
+    mainLayout = new QHBoxLayout(centralWidget);
     
     // Left panel for controls
     QWidget *controlPanel = new QWidget(this);
@@ -336,6 +336,8 @@ void MainWindow::setupUI()
     medianParamsGroup->hide();
     quantizationParamsGroup->hide();
     ditheringParamsGroup->hide();
+    
+    setupHSVControls();
 }
 
 void MainWindow::setupMenus()
@@ -1084,4 +1086,102 @@ void MainWindow::displayOriginalImage(const QImage &image)
 {
     originalImageLabel->setPixmap(QPixmap::fromImage(image));
     originalImageLabel->adjustSize();
+}
+
+void MainWindow::setupHSVControls()
+{
+    hsvGroup = new QGroupBox("HSV Color Space", this);
+    QVBoxLayout *hsvLayout = new QVBoxLayout();
+    
+    // Create buttons
+    convertToHSVButton = new QPushButton("Convert to HSV", this);
+    convertBackToRGBButton = new QPushButton("Convert Back to RGB", this);
+    
+    // Create labels and scroll areas for channels
+    hueChannelLabel = new QLabel("Hue Channel", this);
+    saturationChannelLabel = new QLabel("Saturation Channel", this);
+    valueChannelLabel = new QLabel("Value Channel", this);
+    convertedRGBLabel = new QLabel("Converted RGB", this);
+    
+    hueScrollArea = new QScrollArea(this);
+    saturationScrollArea = new QScrollArea(this);
+    valueScrollArea = new QScrollArea(this);
+    convertedRGBScrollArea = new QScrollArea(this);
+    
+    // Create grid layout for channel displays
+    QGridLayout *channelsLayout = new QGridLayout();
+    channelsLayout->addWidget(hueChannelLabel, 0, 0);
+    channelsLayout->addWidget(saturationChannelLabel, 0, 1);
+    channelsLayout->addWidget(valueChannelLabel, 0, 2);
+    channelsLayout->addWidget(convertedRGBLabel, 0, 3);
+    
+    channelsLayout->addWidget(hueScrollArea, 1, 0);
+    channelsLayout->addWidget(saturationScrollArea, 1, 1);
+    channelsLayout->addWidget(valueScrollArea, 1, 2);
+    channelsLayout->addWidget(convertedRGBScrollArea, 1, 3);
+    
+    // Add widgets to main layout
+    hsvLayout->addWidget(convertToHSVButton);
+    hsvLayout->addWidget(convertBackToRGBButton);
+    hsvLayout->addLayout(channelsLayout);
+    
+    hsvGroup->setLayout(hsvLayout);
+    
+    // Add to control panel layout instead of main layout
+    QWidget *controlPanel = mainLayout->itemAt(0)->widget(); // Get the control panel widget
+    QVBoxLayout *controlLayout = qobject_cast<QVBoxLayout*>(controlPanel->layout());
+    if (controlLayout) {
+        controlLayout->insertWidget(controlLayout->count() - 1, hsvGroup); // Insert before the stretch
+    }
+    
+    // Connect signals
+    connect(convertToHSVButton, &QPushButton::clicked, this, &MainWindow::convertToHSV);
+    connect(convertBackToRGBButton, &QPushButton::clicked, this, &MainWindow::convertBackToRGB);
+}
+
+void MainWindow::convertToHSV()
+{
+    if (currentImage.isNull()) {
+        QMessageBox::warning(this, "Error", "No image loaded!");
+        return;
+    }
+    
+    QImage hsvImage = processor.convertToHSV(currentImage);
+    QImage hueImage = processor.getHueChannel(hsvImage);
+    QImage saturationImage = processor.getSaturationChannel(hsvImage);
+    QImage valueImage = processor.getValueChannel(hsvImage);
+    
+    // Display channels
+    QLabel *hueLabel = new QLabel();
+    hueLabel->setPixmap(QPixmap::fromImage(hueImage));
+    hueScrollArea->setWidget(hueLabel);
+    
+    QLabel *saturationLabel = new QLabel();
+    saturationLabel->setPixmap(QPixmap::fromImage(saturationImage));
+    saturationScrollArea->setWidget(saturationLabel);
+    
+    QLabel *valueLabel = new QLabel();
+    valueLabel->setPixmap(QPixmap::fromImage(valueImage));
+    valueScrollArea->setWidget(valueLabel);
+    
+    // Store HSV image for later conversion
+    currentImage = hsvImage;
+}
+
+void MainWindow::convertBackToRGB()
+{
+    if (currentImage.isNull()) {
+        QMessageBox::warning(this, "Error", "No image loaded!");
+        return;
+    }
+    
+    QImage rgbImage = processor.convertToRGB(currentImage);
+    
+    // Display converted RGB image
+    QLabel *rgbLabel = new QLabel();
+    rgbLabel->setPixmap(QPixmap::fromImage(rgbImage));
+    convertedRGBScrollArea->setWidget(rgbLabel);
+    
+    // Update current image
+    currentImage = rgbImage;
 } 

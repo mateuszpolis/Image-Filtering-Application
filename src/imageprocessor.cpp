@@ -312,4 +312,136 @@ QStringList ImageProcessor::getCustomFilterNames() const {
     }
     
     return result;
+}
+
+QImage ImageProcessor::convertToHSV(const QImage &image)
+{
+    QImage hsvImage(image.size(), QImage::Format_RGB32);
+    
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            QRgb pixel = image.pixel(x, y);
+            int r = qRed(pixel);
+            int g = qGreen(pixel);
+            int b = qBlue(pixel);
+            
+            // Convert RGB to HSV
+            double r_norm = r / 255.0;
+            double g_norm = g / 255.0;
+            double b_norm = b / 255.0;
+            
+            double max = qMax(qMax(r_norm, g_norm), b_norm);
+            double min = qMin(qMin(r_norm, g_norm), b_norm);
+            double delta = max - min;
+            
+            double h = 0.0;
+            double s = (max == 0) ? 0 : delta / max;
+            double v = max;
+            
+            if (delta != 0) {
+                if (max == r_norm) {
+                    h = 60 * fmod(((g_norm - b_norm) / delta), 6);
+                } else if (max == g_norm) {
+                    h = 60 * (((b_norm - r_norm) / delta) + 2);
+                } else {
+                    h = 60 * (((r_norm - g_norm) / delta) + 4);
+                }
+            }
+            
+            if (h < 0) h += 360;
+            
+            // Store HSV values in RGB channels (H in R, S in G, V in B)
+            hsvImage.setPixel(x, y, qRgb(
+                static_cast<int>(h * 255.0 / 360.0),
+                static_cast<int>(s * 255.0),
+                static_cast<int>(v * 255.0)
+            ));
+        }
+    }
+    
+    return hsvImage;
+}
+
+QImage ImageProcessor::convertToRGB(const QImage &hsvImage)
+{
+    QImage rgbImage(hsvImage.size(), QImage::Format_RGB32);
+    
+    for (int y = 0; y < hsvImage.height(); ++y) {
+        for (int x = 0; x < hsvImage.width(); ++x) {
+            QRgb pixel = hsvImage.pixel(x, y);
+            double h = qRed(pixel) * 360.0 / 255.0;
+            double s = qGreen(pixel) / 255.0;
+            double v = qBlue(pixel) / 255.0;
+            
+            // Convert HSV to RGB
+            double c = v * s;
+            double x_val = c * (1 - std::abs(fmod(h / 60.0, 2) - 1));
+            double m = v - c;
+            double r = 0, g = 0, b = 0;
+            
+            if (h < 60) {
+                r = c; g = x_val; b = 0;
+            } else if (h < 120) {
+                r = x_val; g = c; b = 0;
+            } else if (h < 180) {
+                r = 0; g = c; b = x_val;
+            } else if (h < 240) {
+                r = 0; g = x_val; b = c;
+            } else if (h < 300) {
+                r = x_val; g = 0; b = c;
+            } else {
+                r = c; g = 0; b = x_val;
+            }
+            
+            rgbImage.setPixel(x, y, qRgb(
+                static_cast<int>((r + m) * 255),
+                static_cast<int>((g + m) * 255),
+                static_cast<int>((b + m) * 255)
+            ));
+        }
+    }
+    
+    return rgbImage;
+}
+
+QImage ImageProcessor::getHueChannel(const QImage &hsvImage)
+{
+    QImage hueImage(hsvImage.size(), QImage::Format_Grayscale8);
+    
+    for (int y = 0; y < hsvImage.height(); ++y) {
+        for (int x = 0; x < hsvImage.width(); ++x) {
+            QRgb pixel = hsvImage.pixel(x, y);
+            hueImage.setPixel(x, y, qRgb(qRed(pixel), qRed(pixel), qRed(pixel)));
+        }
+    }
+    
+    return hueImage;
+}
+
+QImage ImageProcessor::getSaturationChannel(const QImage &hsvImage)
+{
+    QImage saturationImage(hsvImage.size(), QImage::Format_Grayscale8);
+    
+    for (int y = 0; y < hsvImage.height(); ++y) {
+        for (int x = 0; x < hsvImage.width(); ++x) {
+            QRgb pixel = hsvImage.pixel(x, y);
+            saturationImage.setPixel(x, y, qRgb(qGreen(pixel), qGreen(pixel), qGreen(pixel)));
+        }
+    }
+    
+    return saturationImage;
+}
+
+QImage ImageProcessor::getValueChannel(const QImage &hsvImage)
+{
+    QImage valueImage(hsvImage.size(), QImage::Format_Grayscale8);
+    
+    for (int y = 0; y < hsvImage.height(); ++y) {
+        for (int x = 0; x < hsvImage.width(); ++x) {
+            QRgb pixel = hsvImage.pixel(x, y);
+            valueImage.setPixel(x, y, qRgb(qBlue(pixel), qBlue(pixel), qBlue(pixel)));
+        }
+    }
+    
+    return valueImage;
 } 

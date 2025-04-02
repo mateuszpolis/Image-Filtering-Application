@@ -111,6 +111,22 @@ private:
     // Image processor
     ImageProcessor processor;
     
+    // Layouts
+    QHBoxLayout *mainLayout;
+    
+    // HSV conversion UI elements
+    QGroupBox *hsvGroup;
+    QPushButton *convertToHSVButton;
+    QLabel *hueChannelLabel;
+    QLabel *saturationChannelLabel;
+    QLabel *valueChannelLabel;
+    QScrollArea *hueScrollArea;
+    QScrollArea *saturationScrollArea;
+    QScrollArea *valueScrollArea;
+    QPushButton *convertBackToRGBButton;
+    QLabel *convertedRGBLabel;
+    QScrollArea *convertedRGBScrollArea;
+    
     void setupUI();
     void setupMenus();
     void setupConnections();
@@ -124,6 +140,9 @@ private:
     void setupQuantizationFilterControls();
     void setupDitheringFilterControls();
     void switchFilterType(int index);
+    void setupHSVControls();
+    void convertToHSV();
+    void convertBackToRGB();
 };
 
 #endif // MAINWINDOW_H 

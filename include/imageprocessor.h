@@ -70,6 +70,13 @@ public:
                          double &offset);
     QStringList getCustomFilterNames() const;
 
+    // HSV conversion methods
+    QImage convertToHSV(const QImage &image);
+    QImage convertToRGB(const QImage &hsvImage);
+    QImage getHueChannel(const QImage &hsvImage);
+    QImage getSaturationChannel(const QImage &hsvImage);
+    QImage getValueChannel(const QImage &hsvImage);
+
 private:
     // Helper methods
     QRgb applyFunctionToPixel(QRgb pixel, std::function<int(int)> func);
