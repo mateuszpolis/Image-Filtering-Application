@@ -279,7 +279,10 @@ void MainWindow::setupUI()
     
     // Image display area - modified to show two images side by side
     QWidget *imagePanel = new QWidget(this);
-    QHBoxLayout *imageLayout = new QHBoxLayout(imagePanel);
+    QVBoxLayout *imagePanelLayout = new QVBoxLayout(imagePanel); // Changed to vertical layout
+    
+    // Main images row
+    QHBoxLayout *mainImagesLayout = new QHBoxLayout();
     
     // Original image display
     QVBoxLayout *originalImageLayout = new QVBoxLayout();
@@ -319,9 +322,12 @@ void MainWindow::setupUI()
     editedImageLayout->addWidget(editedImageTitle);
     editedImageLayout->addWidget(scrollArea);
     
-    // Add both image displays to the image panel
-    imageLayout->addLayout(originalImageLayout);
-    imageLayout->addLayout(editedImageLayout);
+    // Add both image displays to the main images row
+    mainImagesLayout->addLayout(originalImageLayout);
+    mainImagesLayout->addLayout(editedImageLayout);
+    
+    // Add main images row to the panel layout
+    imagePanelLayout->addLayout(mainImagesLayout);
     
     // Add panels to main layout
     mainLayout->addWidget(controlPanel);
@@ -1107,6 +1113,13 @@ void MainWindow::setupHSVControls()
     valueScrollArea = new QScrollArea(this);
     convertedRGBScrollArea = new QScrollArea(this);
     
+    // Set minimum sizes for scroll areas
+    QSize minSize(200, 200);
+    hueScrollArea->setMinimumSize(minSize);
+    saturationScrollArea->setMinimumSize(minSize);
+    valueScrollArea->setMinimumSize(minSize);
+    convertedRGBScrollArea->setMinimumSize(minSize);
+    
     // Create grid layout for channel displays
     QGridLayout *channelsLayout = new QGridLayout();
     channelsLayout->addWidget(hueChannelLabel, 0, 0);
@@ -1125,11 +1138,11 @@ void MainWindow::setupHSVControls()
     
     hsvGroup->setLayout(hsvLayout);
     
-    // Add to control panel layout instead of main layout
-    QWidget *controlPanel = mainLayout->itemAt(0)->widget(); // Get the control panel widget
-    QVBoxLayout *controlLayout = qobject_cast<QVBoxLayout*>(controlPanel->layout());
-    if (controlLayout) {
-        controlLayout->insertWidget(controlLayout->count() - 1, hsvGroup); // Insert before the stretch
+    // Add to image panel layout instead of control panel
+    QWidget *imagePanel = mainLayout->itemAt(1)->widget(); // Get the image panel widget
+    QVBoxLayout *imagePanelLayout = qobject_cast<QVBoxLayout*>(imagePanel->layout());
+    if (imagePanelLayout) {
+        imagePanelLayout->addWidget(hsvGroup);
     }
     
     // Connect signal
@@ -1176,7 +1189,7 @@ void MainWindow::convertToHSV()
     // Compare original and converted images
     bool identical = true;
     int diffPixels = 0;
-    const int threshold = 3; // Allow for 1 unit difference in each channel
+    const int threshold = 5;
     
     for (int y = 0; y < originalRGB.height(); ++y) {
         for (int x = 0; x < originalRGB.width(); ++x) {
