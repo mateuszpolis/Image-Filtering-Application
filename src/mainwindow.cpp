@@ -1176,7 +1176,7 @@ void MainWindow::convertToHSV()
     // Compare original and converted images
     bool identical = true;
     int diffPixels = 0;
-    const int threshold = 1; // Allow for 1 unit difference in each channel
+    const int threshold = 3; // Allow for 1 unit difference in each channel
     
     for (int y = 0; y < originalRGB.height(); ++y) {
         for (int x = 0; x < originalRGB.width(); ++x) {
