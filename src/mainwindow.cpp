@@ -1093,9 +1093,8 @@ void MainWindow::setupHSVControls()
     hsvGroup = new QGroupBox("HSV Color Space", this);
     QVBoxLayout *hsvLayout = new QVBoxLayout();
     
-    // Create buttons
+    // Create button
     convertToHSVButton = new QPushButton("Convert to HSV", this);
-    convertBackToRGBButton = new QPushButton("Convert Back to RGB", this);
     
     // Create labels and scroll areas for channels
     hueChannelLabel = new QLabel("Hue Channel", this);
@@ -1122,7 +1121,6 @@ void MainWindow::setupHSVControls()
     
     // Add widgets to main layout
     hsvLayout->addWidget(convertToHSVButton);
-    hsvLayout->addWidget(convertBackToRGBButton);
     hsvLayout->addLayout(channelsLayout);
     
     hsvGroup->setLayout(hsvLayout);
@@ -1134,9 +1132,8 @@ void MainWindow::setupHSVControls()
         controlLayout->insertWidget(controlLayout->count() - 1, hsvGroup); // Insert before the stretch
     }
     
-    // Connect signals
+    // Connect signal
     connect(convertToHSVButton, &QPushButton::clicked, this, &MainWindow::convertToHSV);
-    connect(convertBackToRGBButton, &QPushButton::clicked, this, &MainWindow::convertBackToRGB);
 }
 
 void MainWindow::convertToHSV()
@@ -1146,12 +1143,16 @@ void MainWindow::convertToHSV()
         return;
     }
     
+    // Store original image for comparison
+    QImage originalRGB = currentImage;
+    
+    // Convert to HSV
     QImage hsvImage = processor.convertToHSV(currentImage);
     QImage hueImage = processor.getHueChannel(hsvImage);
     QImage saturationImage = processor.getSaturationChannel(hsvImage);
     QImage valueImage = processor.getValueChannel(hsvImage);
     
-    // Display channels
+    // Display HSV channels
     QLabel *hueLabel = new QLabel();
     hueLabel->setPixmap(QPixmap::fromImage(hueImage));
     hueScrollArea->setWidget(hueLabel);
@@ -1164,24 +1165,40 @@ void MainWindow::convertToHSV()
     valueLabel->setPixmap(QPixmap::fromImage(valueImage));
     valueScrollArea->setWidget(valueLabel);
     
-    // Store HSV image for later conversion
-    currentImage = hsvImage;
-}
-
-void MainWindow::convertBackToRGB()
-{
-    if (currentImage.isNull()) {
-        QMessageBox::warning(this, "Error", "No image loaded!");
-        return;
-    }
-    
-    QImage rgbImage = processor.convertToRGB(currentImage);
+    // Automatically convert back to RGB
+    QImage convertedRGB = processor.convertToRGB(hsvImage);
     
     // Display converted RGB image
     QLabel *rgbLabel = new QLabel();
-    rgbLabel->setPixmap(QPixmap::fromImage(rgbImage));
+    rgbLabel->setPixmap(QPixmap::fromImage(convertedRGB));
     convertedRGBScrollArea->setWidget(rgbLabel);
     
-    // Update current image
-    currentImage = rgbImage;
+    // Compare original and converted images
+    bool identical = true;
+    int diffPixels = 0;
+    for (int y = 0; y < originalRGB.height(); ++y) {
+        for (int x = 0; x < originalRGB.width(); ++x) {
+            QRgb origPixel = originalRGB.pixel(x, y);
+            QRgb convPixel = convertedRGB.pixel(x, y);
+            
+            if (qRed(origPixel) != qRed(convPixel) ||
+                qGreen(origPixel) != qGreen(convPixel) ||
+                qBlue(origPixel) != qBlue(convPixel)) {
+                identical = false;
+                diffPixels++;
+            }
+        }
+    }
+    
+    // Show comparison results
+    QString message;
+    if (identical) {
+        message = "RGB -> HSV -> RGB conversion is perfect (identical images)";
+    } else {
+        message = QString("RGB -> HSV -> RGB conversion has %1 different pixels").arg(diffPixels);
+    }
+    statusBar()->showMessage(message, 5000);
+    
+    // Update current image to the converted RGB for further processing
+    currentImage = convertedRGB;
 } 

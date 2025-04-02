@@ -123,7 +123,6 @@ private:
     QScrollArea *hueScrollArea;
     QScrollArea *saturationScrollArea;
     QScrollArea *valueScrollArea;
-    QPushButton *convertBackToRGBButton;
     QLabel *convertedRGBLabel;
     QScrollArea *convertedRGBScrollArea;
     
@@ -142,7 +141,6 @@ private:
     void switchFilterType(int index);
     void setupHSVControls();
     void convertToHSV();
-    void convertBackToRGB();
 };
 
 #endif // MAINWINDOW_H 
