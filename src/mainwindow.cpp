@@ -1189,17 +1189,24 @@ void MainWindow::convertToHSV()
     // Compare original and converted images
     bool identical = true;
     int diffPixels = 0;
-    const int threshold = 5;
+    const int threshold = 1;
+    int maxDiff = 0;
     
     for (int y = 0; y < originalRGB.height(); ++y) {
         for (int x = 0; x < originalRGB.width(); ++x) {
             QRgb origPixel = originalRGB.pixel(x, y);
             QRgb convPixel = convertedRGB.pixel(x, y);
             
+            // Calculate differences for each channel
+            int rDiff = std::abs(qRed(origPixel) - qRed(convPixel));
+            int gDiff = std::abs(qGreen(origPixel) - qGreen(convPixel));
+            int bDiff = std::abs(qBlue(origPixel) - qBlue(convPixel));
+            
+            // Update maximum difference
+            maxDiff = qMax(maxDiff, qMax(rDiff, qMax(gDiff, bDiff)));
+            
             // Check if any channel difference exceeds the threshold
-            if (std::abs(qRed(origPixel) - qRed(convPixel)) > threshold ||
-                std::abs(qGreen(origPixel) - qGreen(convPixel)) > threshold ||
-                std::abs(qBlue(origPixel) - qBlue(convPixel)) > threshold) {
+            if (rDiff > threshold || gDiff > threshold || bDiff > threshold) {
                 identical = false;
                 diffPixels++;
             }
@@ -1211,7 +1218,10 @@ void MainWindow::convertToHSV()
     if (identical) {
         message = "RGB -> HSV -> RGB conversion is perfect (identical images within threshold)";
     } else {
-        message = QString("RGB -> HSV -> RGB conversion has %1 different pixels (threshold: ±%2)").arg(diffPixels).arg(threshold);
+        message = QString("RGB -> HSV -> RGB conversion has %1 different pixels (threshold: ±%2, max diff: %3)")
+                    .arg(diffPixels)
+                    .arg(threshold)
+                    .arg(maxDiff);
     }
     statusBar()->showMessage(message, 5000);
     
